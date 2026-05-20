@@ -1,0 +1,32 @@
+local gui = Instance.new("ScreenGui", game.CoreGui)
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0,200,0,100)
+frame.Position = UDim2.new(0.5,-100,0.5,-50)
+
+local button = Instance.new("TextButton", frame)
+button.Size = UDim2.new(1,0,1,0)
+button.Text = "FLY"
+
+local flying = false
+local bv
+
+button.MouseButton1Click:Connect(function()
+    local char = game.Players.LocalPlayer.Character
+    local hrp = char:WaitForChild("HumanoidRootPart")
+
+    flying = not flying
+
+    if flying then
+        bv = Instance.new("BodyVelocity")
+        bv.MaxForce = Vector3.new(999999,999999,999999)
+        bv.Velocity = Vector3.new(0,50,0)
+        bv.Parent = hrp
+        button.Text = "UNFLY"
+    else
+        if bv then
+            bv:Destroy()
+        end
+        button.Text = "FLY"
+    end
+end)
