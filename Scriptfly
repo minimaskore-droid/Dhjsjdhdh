@@ -1,32 +1,80 @@
-local gui = Instance.new("ScreenGui", game.CoreGui)
+-- 1. Создаём интерфейс, но безопасно
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Name = "FlyGui"
 
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0,200,0,100)
-frame.Position = UDim2.new(0.5,-100,0.5,-50)
+-- Пытаемся создать GUI в разных местах, чтобы избежать блокировок
+local success, err = pcall(function()
+    gui.Parent = player:WaitForChild("PlayerGui")
+end)
+if not success then
+    pcall(function() gui.Parent = game.CoreGui end)
+end
 
-local button = Instance.new("TextButton", frame)
-button.Size = UDim2.new(1,0,1,0)
-button.Text = "FLY"
+-- 2. Создаём элементы интерфейса
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 200, 0, 100)
+frame.Position = UDim2.new(0.5, -100, 0.5, -50)
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.BorderSizePixel = 0
+frame.Parent = gui
 
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(1, 0, 1, 0)
+button.Text = "ВЗЛЕТ"
+button.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+button.TextColor3 = Color3.new(1, 1, 1)
+button.Parent = frame
+
+-- 3. Логика полёта (безопасная)
 local flying = false
-local bv
+local bodyVel = nil
 
+local function stopFly()
+    if bodyVel then
+        bodyVel:Destroy()
+        bodyVel = nil
+    end
+    local char = player.Character
+    if char and char:FindFirstChild("Humanoid") then
+        char.Humanoid.PlatformStand = false
+    end
+    button.Text = "ВЗЛЕТ"
+    flying = false
+end
+
+local function startFly()
+    stopFly() -- на всякий случай выключаем старый полёт
+    local char = player.Character
+    if not char then return false end
+
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChild("Humanoid")
+    if not hrp or not hum then return false end
+
+    hum.PlatformStand = true
+    bodyVel = Instance.new("BodyVelocity")
+    bodyVel.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bodyVel.Velocity = Vector3.new(0, 50, 0)
+    bodyVel.Parent = hrp
+
+    button.Text = "ОТКЛЮЧИТЬ"
+    flying = true
+    return true
+end
+
+-- 4. Обработка нажатия на кнопку
 button.MouseButton1Click:Connect(function()
-    local char = game.Players.LocalPlayer.Character
-    local hrp = char:WaitForChild("HumanoidRootPart")
-
-    flying = not flying
-
     if flying then
-        bv = Instance.new("BodyVelocity")
-        bv.MaxForce = Vector3.new(999999,999999,999999)
-        bv.Velocity = Vector3.new(0,50,0)
-        bv.Parent = hrp
-        button.Text = "UNFLY"
+        stopFly()
     else
-        if bv then
-            bv:Destroy()
-        end
-        button.Text = "FLY"
+        startFly()
     end
 end)
+
+-- 5. Сбрасываем полёт, если персонаж пересоздаётся (например, после смерти)
+player.CharacterAdded:Connect(function()
+    stopFly()
+end)
+
+print("GUI Fly скрипт успешно загружен!")
